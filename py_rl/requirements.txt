@@ -1,4 +1,6 @@
-gymnasium[atari]
+swig
+box2d-py
+gymnasium[all]
 numpy
 torch
 tyro
