@@ -1,15 +1,27 @@
 ## Quickstart
 
-### 1) Standalone Java Player UI
-- Prereq: Java 8+ (`java -version`)
+### 1) Compile Java Code First
+Before running the Java environment, you need to compile the source code:
+
+**Prerequisites:**
+- Java 8+ with JDK (`java -version` and `javac -version`)
 - From repository root:
+
 ```bash
 cd pol_env/Tribes
+mkdir -p out
+find src -name "*.java" -exec javac -cp "lib/json.jar" -d out -sourcepath src {} +
+```
+
+### 2) Standalone Java Player UI
+- After compilation, run the player UI:
+```bash
 java -cp out:lib/json.jar Play
 ```
 - The UI parameters are defined in `pol_env/Tribes/play.json`.
+- **Note:** Requires a display server (GUI). On headless servers, you'll get a `HeadlessException`.
 
-### 2) Python Bridge (Py4J) + Installation
+### 3) Python Bridge (Py4J) + Installation
 - Prereqs: Python 3.9+ and pip
 - From repository root:
 ```bash
@@ -55,8 +67,8 @@ From the `pol_env/Tribes` directory:
 # Create the out directory
 mkdir -p out
 
-# Compile all Java source files
-javac -cp "lib/json.jar" -d out -sourcepath src src/**/*.java
+# Compile all Java source files (corrected command)
+find src -name "*.java" -exec javac -cp "lib/json.jar" -d out -sourcepath src {} +
 ```
 
 ### Verification
