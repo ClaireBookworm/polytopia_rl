@@ -8,6 +8,10 @@ from gym_env import make_default_env
 
 
 def main():
+    # Change to the Tribes directory so Java can find terrainProbs.json
+    tribes_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    os.chdir(tribes_dir)
+    
     # Ensure JVM sees classes: prepend out and json.jar to CLASSPATH
     out_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "out"))
     json_jar = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "lib", "json.jar"))
@@ -23,6 +27,12 @@ def main():
     acts = env.list_actions()
     print("n_actions", len(acts))
     print(env.render(mode="ansi"))
+    
+    # Enable Java GUI visualization
+    print("Opening Java GUI for visualization...")
+    env.render(mode="java")
+    time.sleep(1)
+    
     steps = 5
     for t in range(steps):
         if len(acts) == 0:
@@ -34,12 +44,19 @@ def main():
             out_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
             img.save(os.path.join(out_dir, f"img_step_{t}.png"))
         print("t", t, "tick", info["tick"], "scores", info["scores"], "done", done)
+        
+        # Update GUI after each step
+        env.render(mode="java")
+        
         if done:
             break
         acts = env.list_actions()
         action = random.randint(0, len(acts) - 1)
         print('taking action:', acts[action])
         obs, rew, done, info = env.step(action)
+        
+        # Update GUI after action
+        env.render(mode="java")
 
     env.close()
 

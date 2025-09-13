@@ -19,7 +19,9 @@ class TribesGymEnv:
         # Launch a JVM with the proper classpath if no external gateway is provided.
         if port is None:
             classpath = f"{classpath_out}:{json_jar}"
-            port = launch_gateway(classpath=classpath, die_on_exit=True)
+            # Set working directory to the Tribes directory so Java can find terrainProbs.json
+            tribes_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            port = launch_gateway(classpath=classpath, die_on_exit=True, cwd=tribes_dir)
         self._gateway = JavaGateway(gateway_parameters=GatewayParameters(port=port, auto_convert=True))
         self._jvm = self._gateway.jvm
         self._env = self._jvm.core.game.PythonEnv()
