@@ -43,7 +43,13 @@ class TribesGymEnv:
         done = bool(self._env.isDone())
 
         # TEMP REWARD FUNCTION
-        scores = self._env.getScores()
+        # tribe0 score - average of other scores
+        scores = list(self._env.getScores())
+        tribe0_score = scores[0]
+        other_scores = scores[1:]
+        print(tribe0_score, other_scores)
+        reward = (tribe0_score - sum(other_scores) / len(other_scores))/100
+
         info = {
             "tick": int(self._env.getTick()),
             "activeTribeID": int(self._env.getActiveTribeID()),
