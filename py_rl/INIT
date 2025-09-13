@@ -28,5 +28,6 @@ else
     echo "No requirements.txt found, skipping dependency installation."
 fi
 
+alias py=python3
 
 echo "Virtual environment is ready!"
