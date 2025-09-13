@@ -31,7 +31,9 @@ def main():
         obs, rew, done, info = env.step(0)
         img = env.render(mode="rgb_image")
         if img is not None:
-            img.save(f"/Users/sophiapung/Projects/Polytopia/Tribes/img_step_{t}.png")
+            # Save image to the Tribes directory (same level as this script's parent)
+            img_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"img_step_{t}.png")
+            img.save(img_path)
         print("t", t, "tick", info["tick"], "scores", info["scores"], "done", done)
         if done:
             break
