@@ -28,10 +28,8 @@ def main():
     print("n_actions", len(acts))
     print(env.render(mode="ansi"))
     
-    # Enable Java GUI visualization
-    print("Opening Java GUI for visualization...")
-    env.render(mode="java")
-    time.sleep(1)
+    # Skip Java GUI on headless servers
+    print("Running on headless server - using text and image rendering instead")
     
     steps = 5
     for t in range(steps):
@@ -45,8 +43,8 @@ def main():
             img.save(os.path.join(out_dir, f"img_step_{t}.png"))
         print("t", t, "tick", info["tick"], "scores", info["scores"], "done", done)
         
-        # Update GUI after each step
-        env.render(mode="java")
+        # Show text state after each step
+        print(env.render(mode="ansi"))
         
         if done:
             break
@@ -55,8 +53,8 @@ def main():
         print('taking action:', acts[action])
         obs, rew, done, info = env.step(action)
         
-        # Update GUI after action
-        env.render(mode="java")
+        # Show text state after action
+        print(env.render(mode="ansi"))
 
     env.close()
 
