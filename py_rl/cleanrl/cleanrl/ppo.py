@@ -13,6 +13,24 @@ import tyro
 from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
 
+import importlib.util
+import sys
+
+# add repo root (two levels up) so `pol_env` can be imported by name
+_repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+
+# try normal import first; fall back to loading by file path if needed
+try:
+    import pol_env.Tribes.py.register_env as register_env  # adjust if folder name differs
+except Exception:
+    _fpath = os.path.join(_repo_root, "pol_env", "Tribes", "py", "register_env.py")
+    spec = importlib.util.spec_from_file_location("register_env", _fpath)
+    register_env = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(register_env)
+
+from pol_env.Tribes.py.register_env import TribesGymWrapper  # adjust if folder name differs
 
 @dataclass
 class Args:
@@ -34,7 +52,8 @@ class Args:
     """whether to capture videos of the agent performances (check out `videos` folder)"""
 
     # Algorithm specific arguments
-    env_id: str = "CartPole-v1"
+    # env_id: str = "CartPole-v1"
+    env_id: str = "Tribes-v0"
     """the id of the environment"""
     total_timesteps: int = 500000
     """total timesteps of the experiments"""
@@ -134,7 +153,8 @@ if __name__ == "__main__":
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     if args.track:
         import wandb
-
+        import os
+        import sys
         wandb.init(
             project=args.wandb_project_name,
             entity=args.wandb_entity,

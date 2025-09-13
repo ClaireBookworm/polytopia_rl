@@ -38,6 +38,8 @@ class TribesGymEnv:
         return int(self._env.actionCount())
 
     def step(self, action_index: int) -> Tuple[Dict[str, Any], float, bool, Dict[str, Any]]:
+        if self._env.getActiveTribeID() != 0:
+            self._env.setActiveTribeID(0)
         self._env.stepByIndex(int(action_index))
         obs = json.loads(self._env.observationJson())
         done = bool(self._env.isDone())
