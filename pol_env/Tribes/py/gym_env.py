@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Any, Dict, List, Tuple, Optional, Union
 
 from py4j.java_gateway import JavaGateway, GatewayParameters, launch_gateway
@@ -176,6 +177,9 @@ class TribesGymEnv:
 
 
 def make_default_env() -> TribesGymEnv:
-    return TribesGymEnv(classpath_out="out", json_jar="lib/json.jar")
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    out_dir = os.path.join(base_dir, "out")
+    json_jar = os.path.join(base_dir, "lib", "json.jar")
+    return TribesGymEnv(classpath_out=out_dir, json_jar=json_jar)
 
 

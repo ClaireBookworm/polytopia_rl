@@ -1,0 +1,19 @@
+{
+  "Game Mode": "Capitals",
+  "Repetitions": 1,
+  "Rollouts": false,
+  "Search Depth": 5,
+  "Force End": false,
+  "Population Size": 1,
+  "Players": ["MC", "MC"],
+  "Tribes": ["Xin Xi", "Imperius"],
+  "Shift Tribes": false,
+  "Verbose": false,
+  "Level Seeds": ["-1"],
+  "Progressive Bias": true,
+  "Pruning": true,
+  "K init mult": 0.5,
+  "T mult": 2.0,
+  "A mult": 1.5,
+  "B": 1.3
+}
