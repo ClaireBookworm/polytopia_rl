@@ -1,0 +1,16 @@
+*.xml
+*.class
+*.iml
+*.kotlin_module
+.DS_Store
+img/xcf_nogit/*
+*.xcf
+save/*
+res/
+out/
+.idea/
+*.pyc
+py/venv/
+test/
+map/
+map_elites_*
