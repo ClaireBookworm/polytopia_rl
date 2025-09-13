@@ -39,3 +39,35 @@ python run_gym.py
 - Notes:
   - No manual `CLASSPATH` needed; the Python code launches the JVM with the correct classpath.
   - Images from the demo are saved to `pol_env/Tribes/img_step_*.png`.
+
+## Compiling Java Code
+
+Before running the Python environment, you need to compile the Java source code to create the `out` directory with compiled classes.
+
+### Prerequisites
+- Java 8+ (`java -version`)
+- The `lib/json.jar` file should be present in the `lib/` directory
+
+### Compilation Steps
+From the `pol_env/Tribes` directory:
+
+```bash
+# Create the out directory
+mkdir -p out
+
+# Compile all Java source files
+javac -cp "lib/json.jar" -d out -sourcepath src src/**/*.java
+```
+
+### Verification
+After compilation, you should see:
+- An `out/` directory containing compiled `.class` files
+- The key file `out/core/game/PythonEnv.class` should exist
+
+### Troubleshooting
+- If you get "command not found: javac", make sure Java JDK is installed (not just JRE)
+- On macOS: `brew install openjdk` or download from Oracle
+- On Ubuntu: `sudo apt install openjdk-11-jdk`
+- On Windows: Download JDK from Oracle or use `choco install openjdk`
+
+Once the `out` directory is created with compiled classes, you can proceed with the Python setup and run the environment.
