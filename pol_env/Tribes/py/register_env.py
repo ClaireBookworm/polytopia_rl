@@ -1,4 +1,8 @@
 import gymnasium as gym
+<<<<<<< HEAD
+=======
+from numpy import np
+>>>>>>> ba71275b8b3b4076fcf7ffd36095c5b8a758a9fc
 from gymnasium.envs.registration import register
 from .gym_env import TribesGymEnv
 
