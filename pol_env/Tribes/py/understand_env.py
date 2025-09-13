@@ -1,0 +1,23 @@
+from gym_env import make_default_env
+import os
+
+env = make_default_env()
+level = os.path.join(os.path.dirname(__file__), "..", "levels", "SampleLevel.csv")
+obs = env.reset(level)
+img = env.render(mode="rgb_image")
+img.save("img.png")
+actions = env.list_actions()
+# print(actions)
+print(actions[0])
+
+obs, reward, done, info = env.step(0)
+print(obs)
+print("--------------------------------")
+print(reward)
+print("--------------------------------")
+print(done)
+print("--------------------------------")
+print(info)
+img = env.render(mode="rgb_image")
+img.save("img1.png")
+env.close()

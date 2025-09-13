@@ -41,12 +41,13 @@ class TribesGymEnv:
         self._env.stepByIndex(int(action_index))
         obs = json.loads(self._env.observationJson())
         done = bool(self._env.isDone())
-        # Simple reward placeholder.
-        reward = 0.0
+
+        # TEMP REWARD FUNCTION
+        scores = self._env.getScores()
         info = {
             "tick": int(self._env.getTick()),
             "activeTribeID": int(self._env.getActiveTribeID()),
-            "scores": list(self._env.getScores()),
+            "scores": list(scores),
         }
         self._last_obs = obs
         return obs, reward, done, info
