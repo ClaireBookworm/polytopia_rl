@@ -338,12 +338,30 @@ public class GUI extends JFrame {
                 game.setPaused(true);
                 pause.setText("Resume");
             }
+            boardView.repaint();
+            repaint();
+        });
+
+        JButton zoomOut = new JButton("Zoom -");
+        zoomOut.addActionListener(e -> {
+            CELL_SIZE = Math.max(2, CELL_SIZE - GUI_ZOOM_FACTOR);
+            boardView.repaint();
+            repaint();
+        });
+
+        JButton zoomIn = new JButton("Zoom +");
+        zoomIn.addActionListener(e -> {
+            CELL_SIZE += GUI_ZOOM_FACTOR;
+            boardView.repaint();
+            repaint();
         });
 
         buttons.add(endTurn);
         buttons.add(playTurn);
         buttons.add(playTick);
         buttons.add(pause);
+        buttons.add(zoomOut);
+        buttons.add(zoomIn);
         sidePanel.add(buttons, c);
 
         c.gridy++;
