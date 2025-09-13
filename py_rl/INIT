@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Check if REINIT=1 is set to delete and recreate venv
+if [ "$REINIT" = "1" ]; then
+    if [ -d ".venv" ]; then
+        echo "REINIT=1 detected. Removing existing virtual environment..."
+        rm -rf .venv
+    fi
+fi
+
+# Check if .venv directory exists
+if [ ! -d ".venv" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv .venv
+fi
+
+# Activate virtual environment
+echo "Activating virtual environment..."
+source .venv/bin/activate
+
+# Check if requirements.txt exists and install dependencies
+if [ -f "requirements.txt" ]; then
+    echo "Installing dependencies from requirements.txt..."
+    pip install -r requirements.txt
+else
+    echo "No requirements.txt found, skipping dependency installation."
+fi
+
+echo "Virtual environment is ready!"
