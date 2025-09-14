@@ -10,7 +10,8 @@ from urllib.parse import urlparse
 from io import BytesIO
 import numpy as np
 from PIL import Image
-import gym
+import gymnasium as gym
+import imageio.v2 as imageio
 
 from gym_env import make_default_env
 
@@ -31,6 +32,8 @@ class GameState:
         self.video_frames = []
         self.video_writer = None
         self.video_filename = None
+        self.frames_dir = None
+        self.video_dir = None
         self.game_completed = False
         self.manual_play_stopped = False
         self.run_name = None
@@ -87,7 +90,7 @@ class SimpleWebHandler(BaseHTTPRequestHandler):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polytopia Game Visualizer</title>
+    <title>Polytopia Simulator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -834,14 +837,19 @@ Available Actions: {len(self.game_state.env.list_actions()) if self.game_state.e
     def start_recording(self):
         """Start video recording"""
         try:
-            # Create videos directory if it doesn't exist
-            os.makedirs(f"videos/{self.game_state.run_name}", exist_ok=True)
+            # Create frames and videos directories if they don't exist
+            self.game_state.frames_dir = f"frames/{self.game_state.run_name}"
+            self.game_state.video_dir = "videos"
+            os.makedirs(self.game_state.frames_dir, exist_ok=True)
+            os.makedirs(self.game_state.video_dir, exist_ok=True)
             
             # Initialize video recording
             self.game_state.video_frames = []
             self.game_state.recording = True
-            self.game_state.video_filename = f"videos/{self.game_state.run_name}/game_recording.mp4"
+            self.game_state.video_filename = f"{self.game_state.video_dir}/{self.game_state.run_name}.mp4"
             print(f"Video recording started for run: {self.game_state.run_name}")
+            print(f"Frames will be saved to: {self.game_state.frames_dir}")
+            print(f"Video will be saved to: {self.game_state.video_filename}")
         except Exception as e:
             print(f"Error starting recording: {e}")
     
@@ -849,8 +857,8 @@ Available Actions: {len(self.game_state.env.list_actions()) if self.game_state.e
         """Record a frame for the video"""
         try:
             if self.game_state.recording and game_img:
-                # Save frame as image
-                frame_filename = f"videos/{self.game_state.run_name}/frame_{self.game_state.current_step:04d}.png"
+                # Save frame as image in frames directory
+                frame_filename = f"{self.game_state.frames_dir}/frame_{self.game_state.current_step:04d}.png"
                 game_img.save(frame_filename)
                 self.game_state.video_frames.append(frame_filename)
         except Exception as e:
@@ -863,15 +871,22 @@ Available Actions: {len(self.game_state.env.list_actions()) if self.game_state.e
                 print("No frames to save")
                 return
             
-            # Create a simple video by combining frames
-            # For now, we'll just keep the individual frame files
-            # The user can combine them into a video manually if needed
+            print(f"Creating video from {len(self.game_state.video_frames)} frames...")
+            
+            # Create video from frames using imageio
+            with imageio.get_writer(self.game_state.video_filename, fps=2) as writer:
+                for frame_path in self.game_state.video_frames:
+                    if os.path.exists(frame_path):
+                        frame = imageio.imread(frame_path)
+                        writer.append_data(frame)
+            
             print(f"Video recording finished for run: {self.game_state.run_name}")
-            print(f"Saved {len(self.game_state.video_frames)} frames to videos/{self.game_state.run_name}/")
-            print("Frames saved as individual PNG files - can be combined into video manually")
+            print(f"Saved {len(self.game_state.video_frames)} frames to {self.game_state.frames_dir}/")
+            print(f"Created video: {self.game_state.video_filename}")
             
         except Exception as e:
             print(f"Error finishing recording: {e}")
+            print("Frames are still available in the frames directory")
     
     def serve_download_video(self):
         """Serve video file for download"""
