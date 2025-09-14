@@ -1,0 +1,18 @@
+tick=0 activeTribeID=0 scores=[490, 390, 390, 395] actions=10
+sample_actions=[DECLARE_WAR by tribe 0 on tribe 1, DECLARE_WAR by tribe 0 on tribe 2, DECLARE_WAR by tribe 0 on tribe 3, END_TURN by tribe 0, MOVE by unit 2 to 1 : 10, MOVE by unit 2 to 3 : 12, ...]
+fffsddddsffsds..
+.msdddddsfCCCsmf
+ssddddds..CXCfv.
+fCCCddsm..CCCm..
+.CXCsdsv..mf.mff
+.CCCsdds..vm.mv.
+.f...ssf.m..ssss
+fvf.v..vffssdddd
+..ff.f...sdddddd
+.......CCCsdddds
+fvsssssCXC.sdds.
+.sdddddCCC.sCCC.
+sdddddddsssdCXC.
+ddddddddssssCCC.
+ssdddddsv.......
+..sddds.........

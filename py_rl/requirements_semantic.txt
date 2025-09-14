@@ -1,0 +1,4 @@
+sentence-transformers>=2.2.0
+transformers>=4.21.0
+torch>=1.13.0
+scikit-learn>=1.1.0

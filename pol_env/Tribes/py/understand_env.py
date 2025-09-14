@@ -7,7 +7,7 @@ obs = env.reset(level)
 img = env.render(mode="rgb_image")
 img.save("img.png")
 actions = env.list_actions()
-# print(actions)
+print(actions)
 print(actions[0])
 
 obs, reward, done, info = env.step(0)

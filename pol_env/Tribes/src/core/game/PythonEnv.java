@@ -48,6 +48,13 @@ public class PythonEnv {
         return gs.getActiveTribeID();
     }
 
+    public void setActiveTribeID(int tribeId) {
+        gs.getBoard().setActiveTribeID(tribeId);
+        // Recompute actions for the new active tribe
+        Tribe newActiveTribe = gs.getTribe(tribeId);
+        gs.computePlayerActions(newActiveTribe);
+    }
+
     public int getTick() {
         return gs.getTick();
     }

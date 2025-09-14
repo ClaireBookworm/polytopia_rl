@@ -38,24 +38,60 @@ class TribesGymEnv:
         return int(self._env.actionCount())
 
     def step(self, action_index: int) -> Tuple[Dict[str, Any], float, bool, Dict[str, Any]]:
-        if self._env.getActiveTribeID() != 0:
-            self._env.setActiveTribeID(0)
+        # Note: Removed setActiveTribeID call due to Py4J method signature issues
+        # The game engine should handle turn management automatically
+        
+        # Get scores before action
+
+        prev_scores = list(self._env.getScores())
+        prev_tribe0_score = prev_scores[0]
+        
         self._env.stepByIndex(int(action_index))
         obs = json.loads(self._env.observationJson())
         done = bool(self._env.isDone())
 
-        # TEMP REWARD FUNCTION
-        # tribe0 score - average of other scores
+        # Get scores after action
         scores = list(self._env.getScores())
         tribe0_score = scores[0]
         other_scores = scores[1:]
-        print(tribe0_score, other_scores)
-        reward = (tribe0_score - sum(other_scores) / len(other_scores))/100
+        
+        # Print only when scores change to reduce spam
+        if prev_tribe0_score != tribe0_score:
+            print(f"SCORE CHANGE! {prev_tribe0_score} -> {tribe0_score}, others: {other_scores}")
+            # print(self.list_actions())
+            # print(f"Action: {self.list_actions()[action_index]}")
+        
+        # Enhanced reward function
+        # 1. Progress reward: +1 for each point gained
+        progress_reward = (tribe0_score - prev_tribe0_score) / 100.0
+        
+        # 2. Relative position reward: how well we're doing vs others
+        avg_other_score = sum(other_scores) / len(other_scores) if other_scores else 0
+        relative_reward = (tribe0_score - avg_other_score) / 1000.0  # Smaller weight
+        
+        # 3. Small step penalty to encourage ending games faster
+        step_penalty = -0.01
+        
+        # Combine rewards
+        reward = progress_reward + relative_reward + step_penalty
+        print(reward)
+        
+        # Bonus for winning/losing states
+        if done:
+            if tribe0_score == max(scores):
+                reward += 100.0  # Win bonus
+                print(f"🏆 WIN! Final score: {tribe0_score} vs {other_scores}")
+            else:
+                reward -= 100.0  # Loss penalty
+                print(f"💀 LOSS! Final score: {tribe0_score} vs {other_scores}")
 
         info = {
             "tick": int(self._env.getTick()),
             "activeTribeID": int(self._env.getActiveTribeID()),
             "scores": list(scores),
+            "score": tribe0_score,  # Add individual score for easier access
+            "progress_reward": progress_reward,
+            "relative_reward": relative_reward,
         }
         self._last_obs = obs
         return obs, reward, done, info
