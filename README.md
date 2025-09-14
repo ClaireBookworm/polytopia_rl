@@ -37,6 +37,3 @@ Slides with methods and visuals: https://docs.google.com/presentation/d/1oripsNA
 - Python demo:
   - `cd pol_env/Tribes/py`
   - `python run_gym.py`
-
-### Codespaces
-This repo includes `.devcontainer/devcontainer.json` so you can launch a cloud dev environment from the GitHub UI (Code → Codespaces → Create codespace on main). It installs Python deps, Java, and compiles the engine automatically.
