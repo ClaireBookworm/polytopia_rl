@@ -28,8 +28,12 @@ def main():
     print("n_actions", len(acts))
     print(env.render(mode="ansi"))
     
-    # Skip Java GUI on headless servers
-    print("Running on headless server - using text and image rendering instead")
+    # Try to open the Java GUI as well (for side-by-side validation)
+    try:
+        env.render(mode="java")
+        print(f"Opened Java GUI window (DISPLAY={os.environ.get('DISPLAY','')}).")
+    except Exception as e:
+        print(f"Could not open Java GUI (continuing without): {e}")
     
     steps = 5
     for t in range(steps):
@@ -37,6 +41,12 @@ def main():
             print("no_actions")
             break 
         obs, rew, done, info = env.step(0)
+        # Refresh Java GUI if available
+        try:
+            env.render(mode="java")
+            time.sleep(0.05)
+        except Exception:
+            pass
         img = env.render(mode="rgb_image")
         if img is not None:
             out_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -55,6 +65,11 @@ def main():
         
         # Show text state after action
         print(env.render(mode="ansi"))
+        try:
+            env.render(mode="java")
+            time.sleep(0.05)
+        except Exception:
+            pass
 
     env.close()
 
