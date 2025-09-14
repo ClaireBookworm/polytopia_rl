@@ -56,8 +56,8 @@ class TribesGymEnv:
         other_scores = scores[1:]
         
         # Print only when scores change to reduce spam
-        if prev_tribe0_score != tribe0_score:
-            print(f"SCORE CHANGE! {prev_tribe0_score} -> {tribe0_score}, others: {other_scores}")
+        #if prev_tribe0_score != tribe0_score:
+        #    print(f"SCORE CHANGE! {prev_tribe0_score} -> {tribe0_score}, others: {other_scores}")
             # print(self.list_actions())
             # print(f"Action: {self.list_actions()[action_index]}")
         
@@ -74,7 +74,7 @@ class TribesGymEnv:
         
         # Combine rewards
         reward = progress_reward + relative_reward + step_penalty
-        print(reward)
+        #print(reward)
         
         # Bonus for winning/losing states
         if done:

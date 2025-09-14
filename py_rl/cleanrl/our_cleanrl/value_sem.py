@@ -35,9 +35,9 @@ class Args:
     """if toggled, `torch.backends.cudnn.deterministic=False`"""
     cuda: bool = True
     """if toggled, cuda will be enabled by default"""
-    track: bool = False
+    track: bool = True
     """if toggled, this experiment will be tracked with Weights and Biases"""
-    wandb_project_name: str = "cleanRL"
+    wandb_project_name: str = "hackmit"
     """the wandb's project name"""
     wandb_entity: str = None
     """the entity (team) of wandb's project"""
@@ -59,21 +59,8 @@ class Args:
     """Toggle learning rate annealing for policy and value networks"""
     gamma: float = 0.99
     """the discount factor gamma"""
-    gae_lambda: float = 0.95
-    """the lambda for the general advantage estimation"""
     num_minibatches: int = 4
     """the number of mini-batches"""
-    """the K epochs to update the policy"""
-    norm_adv: bool = True
-    """Toggles advantages normalization"""
-    clip_coef: float = 0.2
-    """the surrogate clipping coefficient"""
-    clip_vloss: bool = True
-    """Toggles whether or not to use a clipped loss for the value function, as per the paper."""
-    ent_coef: float = 0.01
-    """coefficient of the entropy"""
-    vf_coef: float = 0.5
-    """coefficient of the value function"""
     max_grad_norm: float = 0.5
     """the maximum norm for the gradient clipping"""
     target_kl: float = None
@@ -96,10 +83,9 @@ class Args:
 def make_env(text_encoder, idx, capture_video, run_name):
     def thunk():
         base_env = TribesGymWrapper()
-        env = TextSemanticTribesWrapper(base_env, text_encoder)
         if capture_video and idx == 0:
-            env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
-        env = gym.wrappers.RecordEpisodeStatistics(env)
+            base_env = gym.wrappers.RecordVideo(base_env, f"videos/{run_name}")
+        env = gym.wrappers.RecordEpisodeStatistics(base_env)
         return env
 
     return thunk
@@ -111,69 +97,62 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     return layer
 
 
-class TextSemanticAgent(nn.Module):
+class ValueModel(nn.Module):
     def __init__(self, envs, text_embed_dim):
         super().__init__()
         
+        print(envs.single_observation_space.shape)
         obs_size = np.array(envs.single_observation_space.shape).prod()
         
         # Value function (doesn't need action info)
-        self.critic = nn.Sequential(
-            layer_init(nn.Linear(obs_size, 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, 64)),
-            nn.Tanh(),
-            layer_init(nn.Linear(64, 1), std=1.0),
-        )
-        
-        # Semantic action head
-        self.semantic_head = SemanticActionHead(obs_size, text_embed_dim, hidden_dim=128)
+        self.obs_emb = layer_init(nn.Linear(obs_size, 1024))
 
-    def get_value(self, x):
-        return self.critic(x)
+        self.act_emb = layer_init(nn.Linear(text_embed_dim, 1024))
 
-    def get_action_and_value(self, x, action=None, action_embeddings=None):
-        """
-        Args:
-            x: observations (batch_size, obs_dim)
-            action: selected actions if provided (batch_size,)
-            action_embeddings: (batch_size, max_actions, text_embed_dim)
-        """
-        if action_embeddings is None:
-            raise ValueError("action_embeddings must be provided for text semantic agent")
-            
-        # Get semantic action logits
-        logits = self.semantic_head(x, action_embeddings)
+        self.value_layers = nn.ModuleList([
+            nn.Sequential(
+                nn.LayerNorm(1024),
+                layer_init(nn.Linear(1024, 2048)),
+                nn.ReLU(),
+                layer_init(nn.Linear(2048, 1024)),
+            ),
+            nn.Sequential(
+                nn.LayerNorm(1024),
+                layer_init(nn.Linear(1024, 2048)),
+                nn.ReLU(),
+                layer_init(nn.Linear(2048, 1024)),
+            ),
+            nn.Sequential(
+                nn.LayerNorm(1024),
+                layer_init(nn.Linear(1024, 2048)),
+                nn.ReLU(),
+                layer_init(nn.Linear(2048, 1024)),
+            ),
+        ])
         
-        # Mask out invalid actions (where embeddings are all zeros)
-        action_mask = (action_embeddings.sum(dim=-1) != 0)  # (batch_size, max_actions)
-        logits = logits.masked_fill(~action_mask, float('-inf'))
+        self.final_norm = nn.LayerNorm(1024)
+        self.value_head = layer_init(nn.Linear(1024, 1), std=1.0)
         
-        probs = Categorical(logits=logits)
+    def forward(self, x, act_emb):
+        # Embed observation
+        obs_features = torch.relu(self.obs_emb(x))
         
-        if action is None:
-            action = probs.sample()
-            
-        return action, probs.log_prob(action), probs.entropy(), self.critic(x)
-
-
-def pad_action_embeddings(embeddings_list, max_actions=200, embed_dim=384):
-    """Pad action embeddings to fixed size for batching"""
-    batch_embeddings = []
-    
-    for embeddings in embeddings_list:
-        if len(embeddings) == 0:
-            # No actions available
-            padded = torch.zeros(max_actions, embed_dim)
-        else:
-            # Pad or truncate to max_actions
-            padded = torch.zeros(max_actions, embed_dim)
-            actual_actions = min(len(embeddings), max_actions)
-            padded[:actual_actions] = embeddings[:actual_actions]
-            
-        batch_embeddings.append(padded)
-    
-    return torch.stack(batch_embeddings)
+        # Embed action
+        act_features = torch.relu(self.act_emb(act_emb))
+        
+        # Combine observation and action features
+        combined = obs_features + act_features
+        
+        # Pass through residual blocks
+        for layer in self.value_layers:
+            residual = combined
+            combined = layer(combined) + residual
+            combined = torch.relu(combined)
+        
+        # Final normalization and value prediction
+        combined = self.final_norm(combined)
+        value = self.value_head(combined)
+        return value
 
 
 if __name__ == "__main__":
@@ -211,7 +190,7 @@ if __name__ == "__main__":
     # Initialize text encoder
     print("Loading text encoder...")
     text_encoder = SentenceTransformer(args.text_model)
-    print(f"Text encoder loaded. Embedding dimension: {text_encoder.embedding_dim}")
+    print(f"Text encoder loaded.")
 
     # env setup
     envs = gym.vector.SyncVectorEnv(
@@ -219,7 +198,7 @@ if __name__ == "__main__":
     )
     assert isinstance(envs.single_action_space, gym.spaces.Discrete), "only discrete action space is supported"
 
-    agent = TextSemanticAgent(envs, args.text_embed_dim).to(device)
+    agent = ValueModel(envs, args.text_embed_dim).to(device)
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
 
     # ALGO Logic: Storage setup
@@ -227,11 +206,10 @@ if __name__ == "__main__":
     actions = torch.zeros((args.num_steps, args.num_envs) + envs.single_action_space.shape).to(device)
     rewards = torch.zeros((args.num_steps, args.num_envs)).to(device)
     dones = torch.zeros((args.num_steps, args.num_envs)).to(device)
-    values = torch.zeros((args.num_steps, args.num_envs)).to(device)
     
     # Storage for action embeddings
     max_actions = envs.single_action_space.n
-    action_embeddings_storage = torch.zeros((args.num_steps, args.num_envs, max_actions, text_encoder.embedding_dim))
+    action_embeddings_storage = torch.zeros((args.num_steps, args.num_envs, args.text_embed_dim)).to(device)
 
     # TRY NOT TO MODIFY: start the game
     global_step = 0
@@ -255,31 +233,21 @@ if __name__ == "__main__":
 
             # Get current action embeddings for all environments
             current_embeddings = []
+            selected_actions = []
             for env in envs.envs:
-                embeddings = env.get_action_embeddings()
+                all_actions = env.unwrapped.tribes_env.list_actions()
+                action_texts = [action['repr'] for action in all_actions]
+                embeddings = text_encoder.encode(action_texts)
                 current_embeddings.append(embeddings)
+                selected_actions.append(random.randint(0, len(all_actions) - 1))
             
-            # Pad embeddings for batching
-            padded_embeddings = pad_action_embeddings(
-                current_embeddings, 
-                max_actions=max_actions, 
-                embed_dim=text_encoder.embedding_dim
-            ).to(device)
-            
-            action_embeddings_storage[step] = padded_embeddings
+            actions[step] = torch.tensor(selected_actions).to(device)
+            action_embeddings_storage[step] = torch.tensor([current_embeddings[i][selected_actions[i]] for i in range(args.num_envs)]).to(device)
 
-            # ALGO LOGIC: action logic with text semantics
-            with torch.no_grad():
-                action, logprob, _, value = agent.get_action_and_value(
-                    next_obs, 
-                    action_embeddings=padded_embeddings
-                )
-                values[step] = value.flatten()
-            actions[step] = action
-            logprobs[step] = logprob
+
 
             # TRY NOT TO MODIFY: execute the game and log data.
-            next_obs, reward, terminations, truncations, infos = envs.step(action.cpu().numpy())
+            next_obs, reward, terminations, truncations, infos = envs.step(selected_actions)
             next_done = np.logical_or(terminations, truncations)
             rewards[step] = torch.tensor(reward).to(device).view(-1)
             next_obs, next_done = torch.Tensor(next_obs).to(device), torch.Tensor(next_done).to(device)
@@ -291,104 +259,55 @@ if __name__ == "__main__":
                         writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
                         writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
 
-        # bootstrap value if not done
-        with torch.no_grad():
-            next_value = agent.get_value(next_obs).reshape(1, -1)
-            advantages = torch.zeros_like(rewards).to(device)
-            lastgaelam = 0
-            for t in reversed(range(args.num_steps)):
-                if t == args.num_steps - 1:
-                    nextnonterminal = 1.0 - next_done
-                    nextvalues = next_value
-                else:
-                    nextnonterminal = 1.0 - dones[t + 1]
-                    nextvalues = values[t + 1]
-                delta = rewards[t] + args.gamma * nextvalues * nextnonterminal - values[t]
-                advantages[t] = lastgaelam = delta + args.gamma * args.gae_lambda * nextnonterminal * lastgaelam
-            returns = advantages + values
+        returns = torch.zeros_like(rewards).to(device)
+        for t in reversed(range(args.num_steps)):
+            if t == args.num_steps - 1:
+                nextnonterminal = 1.0 - next_done
+                next_return = 0
+            else:
+                nextnonterminal = 1.0 - dones[t + 1]
+                next_return = returns[t + 1]
+            returns[t] = rewards[t] + args.gamma * nextnonterminal * next_return
 
         # flatten the batch
         b_obs = obs.reshape((-1,) + envs.single_observation_space.shape)
-        b_logprobs = logprobs.reshape(-1)
         b_actions = actions.reshape((-1,) + envs.single_action_space.shape)
-        b_advantages = advantages.reshape(-1)
         b_returns = returns.reshape(-1)
-        b_values = values.reshape(-1)
-        b_action_embeddings = action_embeddings_storage.reshape((-1, max_actions, text_encoder.embedding_dim))
+        b_action_embeddings = action_embeddings_storage.reshape((-1, args.text_embed_dim))
 
         # Optimizing the policy and value network
         b_inds = np.arange(args.batch_size)
-        clipfracs = []
-        for epoch in range(args.update_epochs):
-            np.random.shuffle(b_inds)
-            for start in range(0, args.batch_size, args.minibatch_size):
-                end = start + args.minibatch_size
-                mb_inds = b_inds[start:end]
 
-                _, newlogprob, entropy, newvalue = agent.get_action_and_value(
-                    b_obs[mb_inds], 
-                    b_actions.long()[mb_inds],
-                    action_embeddings=b_action_embeddings[mb_inds]
-                )
-                
-                logratio = newlogprob - b_logprobs[mb_inds]
-                ratio = logratio.exp()
+        np.random.shuffle(b_inds)
+        for start in range(0, args.batch_size, args.minibatch_size):
+            end = start + args.minibatch_size
+            mb_inds = b_inds[start:end]
 
-                with torch.no_grad():
-                    # calculate approx_kl http://joschu.net/blog/kl-approx.html
-                    old_approx_kl = (-logratio).mean()
-                    approx_kl = ((ratio - 1) - logratio).mean()
-                    clipfracs += [((ratio - 1.0).abs() > args.clip_coef).float().mean().item()]
+            expected_ret = agent(
+                b_obs[mb_inds], 
+                b_action_embeddings[mb_inds]
+            )
+            loss = (expected_ret - b_returns[mb_inds]) ** 2
+            loss = loss.mean()
 
-                mb_advantages = b_advantages[mb_inds]
-                if args.norm_adv:
-                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
+            optimizer.zero_grad()
+            loss.backward()
+            nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
+            optimizer.step()
 
-                # Policy loss
-                pg_loss1 = -mb_advantages * ratio
-                pg_loss2 = -mb_advantages * torch.clamp(ratio, 1 - args.clip_coef, 1 + args.clip_coef)
-                pg_loss = torch.max(pg_loss1, pg_loss2).mean()
-
-                # Value loss
-                newvalue = newvalue.view(-1)
-                if args.clip_vloss:
-                    v_loss_unclipped = (newvalue - b_returns[mb_inds]) ** 2
-                    v_clipped = b_values[mb_inds] + torch.clamp(
-                        newvalue - b_values[mb_inds],
-                        -args.clip_coef,
-                        args.clip_coef,
-                    )
-                    v_loss_clipped = (v_clipped - b_returns[mb_inds]) ** 2
-                    v_loss_max = torch.max(v_loss_unclipped, v_loss_clipped)
-                    v_loss = 0.5 * v_loss_max.mean()
-                else:
-                    v_loss = 0.5 * ((newvalue - b_returns[mb_inds]) ** 2).mean()
-
-                entropy_loss = entropy.mean()
-                loss = pg_loss - args.ent_coef * entropy_loss + v_loss * args.vf_coef
-
-                optimizer.zero_grad()
-                loss.backward()
-                nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
-                optimizer.step()
-
-            if args.target_kl is not None and approx_kl > args.target_kl:
-                break
-
-        y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
+        y_pred, y_true = expected_ret.detach().cpu().numpy(), b_returns.cpu().numpy()
         var_y = np.var(y_true)
         explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
-        writer.add_scalar("losses/value_loss", v_loss.item(), global_step)
-        writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
-        writer.add_scalar("losses/entropy", entropy_loss.item(), global_step)
-        writer.add_scalar("losses/old_approx_kl", old_approx_kl.item(), global_step)
-        writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
-        writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
+        writer.add_scalar("losses/value_loss", loss.item(), global_step)
         writer.add_scalar("losses/explained_variance", explained_var, global_step)
         writer.add_scalar("train/lr", optimizer.param_groups[0]["lr"], global_step)
+        writer.add_scalar("train/y_pred_mean", y_pred.mean(), global_step)
+        writer.add_scalar("train/y_true_mean", y_true.mean(), global_step)
+        writer.add_scalar("train/y_pred_std", y_pred.std(), global_step)
+        writer.add_scalar("train/y_true_std", y_true.std(), global_step)
         print("SPS:", int(global_step / (time.time() - start_time)))
         writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
