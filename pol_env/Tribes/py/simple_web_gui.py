@@ -8,9 +8,9 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import webbrowser
 from urllib.parse import urlparse
 from io import BytesIO
-import cv2
 import numpy as np
 from PIL import Image
+import gym
 
 from gym_env import make_default_env
 
@@ -18,6 +18,7 @@ from gym_env import make_default_env
 class GameState:
     def __init__(self):
         self.env = None
+        self.base_env = None  # Store the base environment for video recording
         self.current_step = 0
         self.move_history = []
         self.is_running = False
@@ -32,6 +33,7 @@ class GameState:
         self.video_filename = None
         self.game_completed = False
         self.manual_play_stopped = False
+        self.run_name = None
 
 
 class SimpleWebHandler(BaseHTTPRequestHandler):
@@ -761,7 +763,12 @@ Available Actions: {len(self.game_state.env.list_actions()) if self.game_state.e
             os.environ["CLASSPATH"] = sep.join([out_dir, json_jar] + ([cp] if cp else []))
             
             print("Creating environment...")
+            # Create environment directly
             self.game_state.env = make_default_env()
+            
+            # Create run name for video recording
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.game_state.run_name = f"polytopia_game_{timestamp}"
             
             print("Loading level...")
             level = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "levels", "SampleLevel.csv"))
@@ -827,22 +834,25 @@ Available Actions: {len(self.game_state.env.list_actions()) if self.game_state.e
     def start_recording(self):
         """Start video recording"""
         try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            self.game_state.video_filename = f"game_recording_{timestamp}.mp4"
-            self.game_state.recording = True
+            # Create videos directory if it doesn't exist
+            os.makedirs(f"videos/{self.game_state.run_name}", exist_ok=True)
+            
+            # Initialize video recording
             self.game_state.video_frames = []
-            print(f"Started recording: {self.game_state.video_filename}")
+            self.game_state.recording = True
+            self.game_state.video_filename = f"videos/{self.game_state.run_name}/game_recording.mp4"
+            print(f"Video recording started for run: {self.game_state.run_name}")
         except Exception as e:
             print(f"Error starting recording: {e}")
     
     def record_frame(self, game_img):
         """Record a frame for the video"""
         try:
-            # Resize image to standard video size
-            frame = game_img.resize((1200, 600), Image.Resampling.LANCZOS)
-            # Convert PIL to OpenCV format
-            frame_cv = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
-            self.game_state.video_frames.append(frame_cv)
+            if self.game_state.recording and game_img:
+                # Save frame as image
+                frame_filename = f"videos/{self.game_state.run_name}/frame_{self.game_state.current_step:04d}.png"
+                game_img.save(frame_filename)
+                self.game_state.video_frames.append(frame_filename)
         except Exception as e:
             print(f"Error recording frame: {e}")
     
@@ -853,20 +863,12 @@ Available Actions: {len(self.game_state.env.list_actions()) if self.game_state.e
                 print("No frames to save")
                 return
             
-            # Get frame dimensions
-            height, width = self.game_state.video_frames[0].shape[:2]
-            
-            # Create video writer
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            fps = 2  # 2 frames per second
-            video_writer = cv2.VideoWriter(self.game_state.video_filename, fourcc, fps, (width, height))
-            
-            # Write all frames
-            for frame in self.game_state.video_frames:
-                video_writer.write(frame)
-            
-            video_writer.release()
-            print(f"Video saved: {self.game_state.video_filename}")
+            # Create a simple video by combining frames
+            # For now, we'll just keep the individual frame files
+            # The user can combine them into a video manually if needed
+            print(f"Video recording finished for run: {self.game_state.run_name}")
+            print(f"Saved {len(self.game_state.video_frames)} frames to videos/{self.game_state.run_name}/")
+            print("Frames saved as individual PNG files - can be combined into video manually")
             
         except Exception as e:
             print(f"Error finishing recording: {e}")
