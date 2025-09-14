@@ -1,0 +1,201 @@
+{
+  "game_info": {
+    "total_steps": 31,
+    "total_moves": 31,
+    "created_at": "2025-09-14T04:15:24.279524",
+    "final_scores": [
+      495,
+      497,
+      393,
+      407
+    ]
+  },
+  "moves": [
+    {
+      "timestamp": "04:14:37",
+      "player": "Player 0",
+      "move": "SEND_STARS by tribe 0 to: 3 : 1 stars",
+      "step": 0
+    },
+    {
+      "timestamp": "04:14:37",
+      "player": "Player 1",
+      "move": "END_TURN by tribe 0",
+      "step": 1
+    },
+    {
+      "timestamp": "04:14:43",
+      "player": "Player 1",
+      "move": "DECLARE_WAR by tribe 1 on tribe 2",
+      "step": 2
+    },
+    {
+      "timestamp": "04:14:45",
+      "player": "Player 1",
+      "move": "MOVE by unit 4 to 4 : 3",
+      "step": 3
+    },
+    {
+      "timestamp": "04:14:45",
+      "player": "Player 1",
+      "move": "RESEARCH_TECH by tribe 1 : CLIMBING",
+      "step": 4
+    },
+    {
+      "timestamp": "04:14:45",
+      "player": "Player 2",
+      "move": "END_TURN by tribe 1",
+      "step": 5
+    },
+    {
+      "timestamp": "04:14:46",
+      "player": "Player 3",
+      "move": "END_TURN by tribe 2",
+      "step": 6
+    },
+    {
+      "timestamp": "04:14:46",
+      "player": "Player 3",
+      "move": "MOVE by unit 8 to 13 : 14",
+      "step": 7
+    },
+    {
+      "timestamp": "04:14:46",
+      "player": "Player 3",
+      "move": "SEND_STARS by tribe 3 to: 0 : 1 stars",
+      "step": 8
+    },
+    {
+      "timestamp": "04:14:46",
+      "player": "Player 3",
+      "move": "SPAWN by city 7 : WARRIOR",
+      "step": 9
+    },
+    {
+      "timestamp": "04:14:46",
+      "player": "Player 3",
+      "move": "SEND_STARS by tribe 3 to: 0 : 1 stars",
+      "step": 10
+    },
+    {
+      "timestamp": "04:14:50",
+      "player": "Player 3",
+      "move": "DECLARE_WAR by tribe 3 on tribe 2",
+      "step": 11
+    },
+    {
+      "timestamp": "04:14:51",
+      "player": "Player 0",
+      "move": "END_TURN by tribe 3",
+      "step": 12
+    },
+    {
+      "timestamp": "04:14:52",
+      "player": "Player 0",
+      "move": "RESEARCH_TECH by tribe 0 : RIDING",
+      "step": 13
+    },
+    {
+      "timestamp": "04:14:53",
+      "player": "Player 0",
+      "move": "DECLARE_WAR by tribe 0 on tribe 3",
+      "step": 14
+    },
+    {
+      "timestamp": "04:14:54",
+      "player": "Player 0",
+      "move": "MOVE by unit 2 to 2 : 10",
+      "step": 15
+    },
+    {
+      "timestamp": "04:14:55",
+      "player": "Player 1",
+      "move": "END_TURN by tribe 0",
+      "step": 16
+    },
+    {
+      "timestamp": "04:14:57",
+      "player": "Player 1",
+      "move": "RESOURCE_GATHERED by city 3 : FRUIT",
+      "step": 17
+    },
+    {
+      "timestamp": "04:14:58",
+      "player": "Player 1",
+      "move": "SEND_STARS by tribe 1 to: 3 : 2 stars",
+      "step": 18
+    },
+    {
+      "timestamp": "04:14:59",
+      "player": "Player 1",
+      "move": "MOVE by unit 4 to 5 : 3",
+      "step": 19
+    },
+    {
+      "timestamp": "04:15:00",
+      "player": "Player 2",
+      "move": "END_TURN by tribe 1",
+      "step": 20
+    },
+    {
+      "timestamp": "04:15:01",
+      "player": "Player 2",
+      "move": "SEND_STARS by tribe 2 to: 3 : 3 stars",
+      "step": 21
+    },
+    {
+      "timestamp": "04:15:02",
+      "player": "Player 3",
+      "move": "END_TURN by tribe 2",
+      "step": 22
+    },
+    {
+      "timestamp": "04:15:03",
+      "player": "Player 3",
+      "move": "MOVE by unit 8 to 13 : 15",
+      "step": 23
+    },
+    {
+      "timestamp": "04:15:04",
+      "player": "Player 0",
+      "move": "END_TURN by tribe 3",
+      "step": 24
+    },
+    {
+      "timestamp": "04:15:05",
+      "player": "Player 0",
+      "move": "SEND_STARS by tribe 0 to: 1 : 1 stars",
+      "step": 25
+    },
+    {
+      "timestamp": "04:15:06",
+      "player": "Player 0",
+      "move": "SEND_STARS by tribe 0 to: 3 : 1 stars",
+      "step": 26
+    },
+    {
+      "timestamp": "04:15:07",
+      "player": "Player 0",
+      "move": "SEND_STARS by tribe 0 to: 1 : 1 stars",
+      "step": 27
+    },
+    {
+      "timestamp": "04:15:08",
+      "player": "Player 0",
+      "move": "SEND_STARS by tribe 0 to: 2 : 1 stars",
+      "step": 28
+    },
+    {
+      "timestamp": "04:15:09",
+      "player": "Player 0",
+      "move": "MOVE by unit 2 to 2 : 9",
+      "step": 29
+    },
+    {
+      "timestamp": "04:15:10",
+      "player": "Player 0",
+      "move": "DECLARE_WAR by tribe 0 on tribe 2",
+      "step": 30
+    }
+  ]
+}
