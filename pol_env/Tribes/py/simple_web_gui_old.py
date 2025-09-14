@@ -967,12 +967,14 @@ def main():
     
     # Create server
     handler = create_handler(game_state)
-    # Use 0.0.0.0 to allow external connections (useful for Streamlit)
-    server = HTTPServer(('0.0.0.0', 8000), handler)
+    server = HTTPServer(('localhost', 8000), handler)
     
     print("Starting web-based Polytopia Game Visualizer...")
-    print("Server is running and ready to accept connections")
+    print("Open your browser and go to: http://localhost:8000")
     print("Press Ctrl+C to stop the server")
+    
+    # Open browser automatically
+    webbrowser.open('http://localhost:8000')
     
     try:
         server.serve_forever()
