@@ -44,7 +44,7 @@ class Args:
     """the wandb's project name"""
     wandb_entity: str = None
     """the entity (team) of wandb's project"""
-    capture_video: bool = False
+    capture_video: bool = True
     """whether to capture videos of the agent performances (check out `videos` folder)"""
 
     # Algorithm specific arguments
@@ -89,7 +89,8 @@ def make_env(text_encoder, idx, capture_video, run_name):
     def thunk():
         base_env = TribesGymWrapper()
         if capture_video and idx == 0:
-            base_env = gym.wrappers.RecordVideo(base_env, f"videos/{run_name}")
+            print("recording video!")
+            base_env = gym.wrappers.RecordVideo(base_env, f"videos/{run_name}", episode_trigger=lambda x: x % 10 == 0, video_length=64)
         env = gym.wrappers.RecordEpisodeStatistics(base_env)
         return env
 
@@ -143,7 +144,6 @@ class ValueModel(nn.Module):
         # act_emb: (B, K, D)
 
         flattened = len(x.shape) == 2 and len(act_emb.shape) == 3
-        print(x.shape, act_emb.shape, 'prefla')
         if flattened:
             assert x.shape[0] == act_emb.shape[0]
             b_dim, obs_dim = x.shape
@@ -249,6 +249,10 @@ if __name__ == "__main__":
             lrnow = frac * args.learning_rate
             optimizer.param_groups[0]["lr"] = lrnow
 
+        if iteration % 10 == 1:
+            if args.capture_video:
+                envs.envs[0].env.start_recording(video_name=f"step{iteration}")
+
         for step in range(0, args.num_steps):
             global_step += args.num_envs
             obs[step] = next_obs
@@ -257,14 +261,14 @@ if __name__ == "__main__":
             # Get current action embeddings for all environments
             current_embeddings = []
             selected_actions = []
-            for env in envs.envs:
+            for i, env in enumerate(envs.envs):
                 all_actions = env.unwrapped.tribes_env.list_actions()
                 action_texts = [action['repr'] for action in all_actions]
                 embeddings = torch.from_numpy(text_encoder.encode(action_texts)).to(device)
                 current_embeddings.append(embeddings)
 
                 expected_returns = agent(
-                    next_obs,
+                    next_obs[i],
                     embeddings,
                 )
 
@@ -286,7 +290,10 @@ if __name__ == "__main__":
                 # selected_actions.append(random.randint(0, len(all_actions) - 1))
             
             actions[step] = torch.tensor(selected_actions).to(device)
-            action_embeddings_storage[step] = torch.tensor([current_embeddings[i][selected_actions[i]] for i in range(args.num_envs)]).to(device)
+            #print(selected_actions[0])
+            #print(current_embeddings[0][0])
+            #print(torch.stack([current_embeddings[i][selected_actions[i]] for i in range(args.num_envs)], dim=0).to(device))
+            action_embeddings_storage[step] = torch.stack([current_embeddings[i][selected_actions[i]] for i in range(args.num_envs)], dim=0).to(device)
 
 
             # TRY NOT TO MODIFY: execute the game and log data.
@@ -352,6 +359,7 @@ if __name__ == "__main__":
         writer.add_scalar("train/y_pred_std", y_pred.std(), global_step)
         writer.add_scalar("train/y_true_std", y_true.std(), global_step)
         print("SPS:", int(global_step / (time.time() - start_time)))
+        print(f"step={iteration},loss={loss.item()}")
         writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
     envs.close()
