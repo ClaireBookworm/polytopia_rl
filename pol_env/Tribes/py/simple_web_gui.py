@@ -305,8 +305,8 @@ class SimpleWebHandler(BaseHTTPRequestHandler):
     <!-- Game Complete Modal -->
     <div id="gameCompleteModal" class="modal">
         <div class="modal-content">
-            <h3>🎉 Game Complete!</h3>
-            <p>Your game has finished! Would you like to download the recording and data?</p>
+            <h3>🎉 Game Finished!</h3>
+            <p>Your game session is complete! Download your recording and move history below.</p>
             <div class="modal-buttons">
                 <button class="download-btn" onclick="downloadVideo()">📹 Download Video</button>
                 <button class="download-btn" onclick="downloadJSON()">📄 Download JSON</button>
@@ -319,7 +319,8 @@ class SimpleWebHandler(BaseHTTPRequestHandler):
         let gameState = {
             isRunning: false,
             autoStepsRemaining: 0,
-            currentSpeed: 1.0
+            currentSpeed: 1.0,
+            manualPlayStopped: false
         };
         
         function updateSpeed() {
@@ -354,6 +355,7 @@ class SimpleWebHandler(BaseHTTPRequestHandler):
         }
 
         function startGame() {
+            gameState.manualPlayStopped = false;  // Reset the flag
             updateStatus('Starting new game...');
             document.getElementById('startBtn').disabled = true;
             
@@ -364,6 +366,7 @@ class SimpleWebHandler(BaseHTTPRequestHandler):
                         updateStatus('Game ready! Click Next Step to start playing.');
                         document.getElementById('startBtn').disabled = false;
                         document.getElementById('stepBtn').disabled = false;
+                        document.getElementById('stopBtn').disabled = false;
                         document.getElementById('autoBtn').disabled = false;
                         document.getElementById('saveBtn').disabled = false;
                         updateDisplay();
@@ -381,6 +384,12 @@ class SimpleWebHandler(BaseHTTPRequestHandler):
         }
 
         function nextStep() {
+            // Check if manual play is stopped
+            if (gameState.manualPlayStopped) {
+                updateStatus('Game is stopped - cannot take more steps');
+                return;
+            }
+            
             fetch('/api/next_step')
                 .then(response => response.json())
                 .then(data => {
@@ -395,6 +404,7 @@ class SimpleWebHandler(BaseHTTPRequestHandler):
                     } else {
                         if (data.error === 'Game stopped by user') {
                             updateStatus('Game stopped by user');
+                            gameState.manualPlayStopped = true;
                             document.getElementById('stepBtn').disabled = true;
                             document.getElementById('stopBtn').disabled = true;
                         } else {
@@ -447,6 +457,7 @@ class SimpleWebHandler(BaseHTTPRequestHandler):
         function stopGame() {
             gameState.isRunning = false;
             gameState.autoStepsRemaining = 0;
+            gameState.manualPlayStopped = true;  // Add this flag
             
             document.getElementById('autoBtn').disabled = false;
             document.getElementById('stepBtn').disabled = true;  // Disable step button when stopped
@@ -460,6 +471,8 @@ class SimpleWebHandler(BaseHTTPRequestHandler):
                 .then(data => {
                     if (data.success) {
                         updateStatus('Game stopped - Move history saved');
+                        // Show download popup when manually stopped
+                        showGameCompleteModal();
                     }
                 });
         }
@@ -724,6 +737,12 @@ Available Actions: {len(self.game_state.env.list_actions()) if self.game_state.e
         self.game_state.is_running = False
         self.game_state.auto_steps_remaining = 0
         self.game_state.manual_play_stopped = True
+        
+        # Finish recording if it was active
+        if self.game_state.recording:
+            self.finish_recording()
+            self.game_state.recording = False
+        
         self.save_move_history()
         self.send_json_response({'success': True})
     

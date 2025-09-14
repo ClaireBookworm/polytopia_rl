@@ -115,6 +115,7 @@ class TribesGymEnv:
         terrain = board.get("terrain")
         unit_id = board.get("unitID")
         city_id = board.get("cityID")
+        resource = board.get("resource")
         size = len(terrain) if terrain else 0
 
         # Terrain key mapping (must match core.Types.TERRAIN keys)
@@ -126,6 +127,17 @@ class TribesGymEnv:
             4: "v",  # VILLAGE
             5: "c",  # CITY
             6: "f",  # FOREST
+        }
+        
+        # Resource symbol mapping (must match core.Types.RESOURCE keys)
+        resource_to_char = {
+            1: "f",  # FRUIT on PLAIN
+            2: "a",  # ANIMAL ("game") on FOREST
+            3: "w",  # WHALES on DEEP_WATER
+            5: "o",  # ORE on MOUNTAIN
+            6: "c",  # CROPS on PLAIN
+            7: "r",  # RUINS on any non-blocked tile
+            -1: "",  # NONE
         }
 
         # Build text grid
@@ -202,6 +214,29 @@ class TribesGymEnv:
                     x0, y0 = j * scale, i * scale
                     x1, y1 = x0 + scale, y0 + scale
                     draw.rectangle([x0, y0, x1, y1], fill=col)
+                    
+                    # Add resource symbol if available
+                    if resource and i < len(resource) and j < len(resource[i]):
+                        ch = resource_to_char.get(int(resource[i][j]), "")
+                        if ch and scale >= 12:  # Only draw symbols if scale is large enough and resource exists
+                            try:
+                                from PIL import ImageFont
+                                # Try to use a default font, fallback to basic if not available
+                                try:
+                                    font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", max(8, scale//4))
+                                except:
+                                    font = ImageFont.load_default()
+                                # Center the symbol in the cell
+                                bbox = draw.textbbox((0, 0), ch, font=font)
+                                text_width = bbox[2] - bbox[0]
+                                text_height = bbox[3] - bbox[1]
+                                text_x = x0 + (scale - text_width) // 2
+                                text_y = y0 + (scale - text_height) // 2
+                                # Use bright yellow for resource symbols to make them stand out
+                                draw.text((text_x, text_y), ch, fill=(255, 255, 0), font=font)
+                            except:
+                                pass  # Skip text if font loading fails
+                    
                     # overlays for city/unit
                     if int(city_id[i][j]) != -1:
                         draw.rectangle([x0+scale//4, y0+scale//4, x1-scale//4, y1-scale//4], outline=(255, 255, 255), width=max(1, scale//8))
