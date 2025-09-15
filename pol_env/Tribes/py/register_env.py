@@ -1,5 +1,6 @@
 import gymnasium as gym
 import numpy as np
+import torch
 from gymnasium.envs.registration import register
 from .gym_env import TribesGymEnv, make_default_env
 
@@ -8,8 +9,7 @@ class TribesGymWrapper(gym.Env):
     def __init__(self, level_file="levels/SampleLevel.csv"):
         self.tribes_env = make_default_env()
         self.level_file = level_file
-        
-        # Initialize the environment to get the actual action space size
+        self.render_mode = "rgb_array"        # Initialize the environment to get the actual action space size
         try:
             obs = self.tribes_env.reset(self.level_file, seed=42)
             
@@ -47,6 +47,10 @@ class TribesGymWrapper(gym.Env):
         # convert your dict obs to numpy array here
         return self._dict_to_array(obs), {"valid_actions": action_count}
     
+    def render(self, **kwargs):
+        data = np.array(self.tribes_env.render("rgb_image"))
+        return data
+
     def step(self, action):
         # Get current valid action count
         current_action_count = self.tribes_env.action_space_n

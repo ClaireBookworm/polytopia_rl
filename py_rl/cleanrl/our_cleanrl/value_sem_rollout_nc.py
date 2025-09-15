@@ -143,15 +143,15 @@ class ValueModel(nn.Module):
         # x: (B, O,)
         # act_emb: (B, K, D)
 
+
         flattened = len(x.shape) == 2 and len(act_emb.shape) == 3
         if flattened:
             assert x.shape[0] == act_emb.shape[0]
             b_dim, obs_dim = x.shape
             b_dim, n_actions_dim, action_dim = act_emb.shape
-            x = x.reshape(b_dim, 1, action_dim).repeat(1, n_actions_dim, 1)
+            x = x.reshape(b_dim, 1, obs_dim).repeat(1, n_actions_dim, 1)
             act_emb = act_emb.reshape(b_dim*n_actions_dim, action_dim)
             x = x.reshape(b_dim * n_actions_dim, obs_dim)
-            print(x.shape, act_emb.shape)
 
         # Embed observation
         obs_features = torch.relu(self.obs_emb(x))
@@ -308,6 +308,8 @@ if __name__ == "__main__":
                         print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
                         writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
                         writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
+
+        writer.add_scalar("charts/avg_reward", rewards.mean(), global_step)
 
         returns = torch.zeros_like(rewards).to(device)
         for t in reversed(range(args.num_steps)):

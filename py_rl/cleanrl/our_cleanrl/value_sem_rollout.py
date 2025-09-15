@@ -44,7 +44,7 @@ class Args:
     """the wandb's project name"""
     wandb_entity: str = None
     """the entity (team) of wandb's project"""
-    capture_video: bool = False
+    capture_video: bool = True
     """whether to capture videos of the agent performances (check out `videos` folder)"""
 
     # Algorithm specific arguments
@@ -89,7 +89,8 @@ def make_env(text_encoder, idx, capture_video, run_name):
     def thunk():
         base_env = TribesGymWrapper()
         if capture_video and idx == 0:
-            base_env = gym.wrappers.RecordVideo(base_env, f"videos/{run_name}")
+            print("recording video!")
+            base_env = gym.wrappers.RecordVideo(base_env, f"videos/{run_name}", episode_trigger=lambda x: x % 10 == 0, video_length=64)
         env = gym.wrappers.RecordEpisodeStatistics(base_env)
         return env
 
@@ -142,16 +143,16 @@ class ValueModel(nn.Module):
         # x: (B, O,)
         # act_emb: (B, K, D)
 
+        print(x.shape, act_emb.shape)
+
         flattened = len(x.shape) == 2 and len(act_emb.shape) == 3
-        print(x.shape, act_emb.shape, 'prefla')
         if flattened:
             assert x.shape[0] == act_emb.shape[0]
             b_dim, obs_dim = x.shape
             b_dim, n_actions_dim, action_dim = act_emb.shape
-            x = x.reshape(b_dim, 1, action_dim).repeat(1, n_actions_dim, 1)
+            x = x.reshape(b_dim, 1, obs_dim).repeat(1, n_actions_dim, 1)
             act_emb = act_emb.reshape(b_dim*n_actions_dim, action_dim)
             x = x.reshape(b_dim * n_actions_dim, obs_dim)
-            print(x.shape, act_emb.shape)
 
         # Embed observation
         obs_features = torch.relu(self.obs_emb(x))
@@ -234,6 +235,10 @@ if __name__ == "__main__":
     max_actions = envs.single_action_space.n
     action_embeddings_storage = torch.zeros((args.num_steps, args.num_envs, args.text_embed_dim)).to(device)
 
+    # Initialize tracking variables for total returns
+    total_episodic_returns = []
+    episode_count = 0
+
     # TRY NOT TO MODIFY: start the game
     global_step = 0
     start_time = time.time()
@@ -249,6 +254,10 @@ if __name__ == "__main__":
             lrnow = frac * args.learning_rate
             optimizer.param_groups[0]["lr"] = lrnow
 
+        if iteration % 10 == 1:
+            if args.capture_video:
+                envs.envs[0].env.start_recording(video_name=f"step{iteration}")
+
         for step in range(0, args.num_steps):
             global_step += args.num_envs
             obs[step] = next_obs
@@ -257,14 +266,14 @@ if __name__ == "__main__":
             # Get current action embeddings for all environments
             current_embeddings = []
             selected_actions = []
-            for env in envs.envs:
+            for i, env in enumerate(envs.envs):
                 all_actions = env.unwrapped.tribes_env.list_actions()
                 action_texts = [action['repr'] for action in all_actions]
                 embeddings = torch.from_numpy(text_encoder.encode(action_texts)).to(device)
                 current_embeddings.append(embeddings)
 
                 expected_returns = agent(
-                    next_obs,
+                    next_obs[i],
                     embeddings,
                 )
 
@@ -286,7 +295,10 @@ if __name__ == "__main__":
                 # selected_actions.append(random.randint(0, len(all_actions) - 1))
             
             actions[step] = torch.tensor(selected_actions).to(device)
-            action_embeddings_storage[step] = torch.tensor([current_embeddings[i][selected_actions[i]] for i in range(args.num_envs)]).to(device)
+            #print(selected_actions[0])
+            #print(current_embeddings[0][0])
+            #print(torch.stack([current_embeddings[i][selected_actions[i]] for i in range(args.num_envs)], dim=0).to(device))
+            action_embeddings_storage[step] = torch.stack([current_embeddings[i][selected_actions[i]] for i in range(args.num_envs)], dim=0).to(device)
 
 
             # TRY NOT TO MODIFY: execute the game and log data.
@@ -298,9 +310,53 @@ if __name__ == "__main__":
             if "final_info" in infos:
                 for info in infos["final_info"]:
                     if info and "episode" in info:
-                        print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
-                        writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
-                        writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
+                        episodic_return = info["episode"]["r"]
+                        episodic_length = info["episode"]["l"]
+                        episode_count += 1
+                        total_episodic_returns.append(episodic_return)
+                        
+                        print(f"global_step={global_step}, episodic_return={episodic_return}")
+                        writer.add_scalar("charts/episodic_return", episodic_return, global_step)
+                        writer.add_scalar("charts/episodic_length", episodic_length, global_step)
+                        
+                        # Explicit wandb logging
+                        if args.track:
+                            wandb_log_dict = {
+                                "charts/episodic_return": episodic_return,
+                                "charts/episodic_length": episodic_length,
+                                "charts/episode_count": episode_count,
+                                "global_step": global_step,
+                            }
+                            
+                            # Calculate and log running statistics
+                            if len(total_episodic_returns) >= 10:
+                                recent_returns = total_episodic_returns[-10:]
+                                wandb_log_dict.update({
+                                    "charts/mean_episodic_return_last_10": np.mean(recent_returns),
+                                    "charts/std_episodic_return_last_10": np.std(recent_returns),
+                                    "charts/max_episodic_return_last_10": np.max(recent_returns),
+                                    "charts/min_episodic_return_last_10": np.min(recent_returns),
+                                })
+                            
+                            if len(total_episodic_returns) >= 100:
+                                recent_returns_100 = total_episodic_returns[-100:]
+                                wandb_log_dict.update({
+                                    "charts/mean_episodic_return_last_100": np.mean(recent_returns_100),
+                                    "charts/std_episodic_return_last_100": np.std(recent_returns_100),
+                                    "charts/max_episodic_return_last_100": np.max(recent_returns_100),
+                                    "charts/min_episodic_return_last_100": np.min(recent_returns_100),
+                                })
+                            
+                            # Overall statistics
+                            wandb_log_dict.update({
+                                "charts/total_return_sum": sum(total_episodic_returns),
+                                "charts/mean_episodic_return_all": np.mean(total_episodic_returns),
+                                "charts/std_episodic_return_all": np.std(total_episodic_returns),
+                                "charts/max_episodic_return_all": np.max(total_episodic_returns),
+                                "charts/min_episodic_return_all": np.min(total_episodic_returns),
+                            })
+                            
+                            wandb.log(wandb_log_dict, step=global_step)
 
         returns = torch.zeros_like(rewards).to(device)
         for t in reversed(range(args.num_steps)):
@@ -351,7 +407,23 @@ if __name__ == "__main__":
         writer.add_scalar("train/y_true_mean", y_true.mean(), global_step)
         writer.add_scalar("train/y_pred_std", y_pred.std(), global_step)
         writer.add_scalar("train/y_true_std", y_true.std(), global_step)
+        
+        # Additional wandb logging for training metrics
+        if args.track:
+            training_log_dict = {
+                "losses/value_loss": loss.item(),
+                "losses/explained_variance": explained_var,
+                "train/learning_rate": optimizer.param_groups[0]["lr"],
+                "train/y_pred_mean": y_pred.mean(),
+                "train/y_true_mean": y_true.mean(),
+                "train/y_pred_std": y_pred.std(),
+                "train/y_true_std": y_true.std(),
+                "charts/SPS": int(global_step / (time.time() - start_time)),
+            }
+            wandb.log(training_log_dict, step=global_step)
+        
         print("SPS:", int(global_step / (time.time() - start_time)))
+        print(f"step={iteration},loss={loss.item()}")
         writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
     envs.close()

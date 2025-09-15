@@ -140,6 +140,19 @@ class TribesGymEnv:
             -1: "",  # NONE
         }
 
+        # Resource icon paths and cache
+        ICON_FILES = {
+            0: "img/resource/fish2.png",
+            1: "img/resource/fruit2.png",
+            2: "img/resource/animal2.png",
+            3: "img/resource/whale2.png",
+            5: "img/resource/ore2.png",
+            6: "img/resource/crops2.png",
+            7: "img/resource/ruins2.png",
+        }
+        icon_cache = {}  # keys: ("raw", key) for original; (key, scale) for resized
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
         # Build text grid
         try:
             scores_py = list(self._env.getScores())
@@ -185,7 +198,8 @@ class TribesGymEnv:
             self._env.renderGui()
             return None
 
-        if mode == "rgb_image":
+
+        if mode == "rgb_image" or mode == "rgb_array":
             try:
                 from PIL import Image, ImageDraw  # type: ignore
             except Exception:
@@ -215,39 +229,45 @@ class TribesGymEnv:
                     x1, y1 = x0 + scale, y0 + scale
                     draw.rectangle([x0, y0, x1, y1], fill=col)
                     
-                    # Add resource symbol if available
+                    # Add resource icon if available and tile not covered by city/unit
                     if resource and i < len(resource) and j < len(resource[i]):
-                        ch = resource_to_char.get(int(resource[i][j]), "")
-                        if ch and scale >= 12:  # Only draw symbols if scale is large enough and resource exists
+                        rkey = int(resource[i][j])
+                        icon_rel = ICON_FILES.get(rkey)
+                        has_city = int(city_id[i][j]) != -1
+                        has_unit = int(unit_id[i][j]) != 0
+                        if icon_rel and not (has_city or has_unit):
                             try:
-                                from PIL import ImageFont
-                                # Try to use a default font, fallback to basic if not available
-                                try:
-                                    font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", max(8, scale//4))
-                                except:
-                                    font = ImageFont.load_default()
-                                # Center the symbol in the cell
-                                bbox = draw.textbbox((0, 0), ch, font=font)
-                                text_width = bbox[2] - bbox[0]
-                                text_height = bbox[3] - bbox[1]
-                                text_x = x0 + (scale - text_width) // 2
-                                text_y = y0 + (scale - text_height) // 2
-                                # Use bright yellow for resource symbols to make them stand out
-                                draw.text((text_x, text_y), ch, fill=(255, 255, 0), font=font)
-                            except:
-                                pass  # Skip text if font loading fails
+                                from PIL import Image
+                                raw = icon_cache.get(("raw", rkey))
+                                if raw is None:
+                                    raw = Image.open(os.path.join(base_dir, icon_rel)).convert("RGBA")
+                                    icon_cache[("raw", rkey)] = raw
+                                # resize per scale with margin
+                                margin = max(2, scale // 6)
+                                size_px = max(6, scale - 2 * margin)
+                                icon = icon_cache.get((rkey, size_px))
+                                if icon is None:
+                                    icon = raw.resize((size_px, size_px), Image.LANCZOS)
+                                    icon_cache[(rkey, size_px)] = icon
+                                px = x0 + (scale - icon.width) // 2
+                                py = y0 + (scale - icon.height) // 2
+                                img.paste(icon, (px, py), icon)
+                            except Exception:
+                                pass  # fall back silently if icon load fails
                     
                     # overlays for city/unit
-                    if int(city_id[i][j]) != -1:
-                        draw.rectangle([x0+scale//4, y0+scale//4, x1-scale//4, y1-scale//4], outline=(255, 255, 255), width=max(1, scale//8))
+                    # if int(city_id[i][j]) != -1:
+                    #     draw.rectangle([x0+scale//4, y0+scale//4, x1-scale//4, y1-scale//4], outline=(255, 255, 255), width=max(1, scale//8))
                     uid = int(unit_id[i][j])
                     if uid != 0:
                         # small black dot for unit
                         r = max(2, scale//6)
                         cx, cy = x0 + scale//2, y0 + scale//2
                         draw.ellipse([cx-r, cy-r, cx+r, cy+r], fill=(0, 0, 0))
-
-            return img
+            if mode == "rgb_image":
+                return img
+            else:
+                return img.getdata()
 
         raise ValueError(f"Unsupported render mode: {mode}")
 

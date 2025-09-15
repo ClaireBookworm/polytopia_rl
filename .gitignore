@@ -3,3 +3,4 @@ runs/
 __pycache__/
 *.png
 action_embeddings_cache/
+*.mp4
