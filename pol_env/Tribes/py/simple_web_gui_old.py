@@ -963,34 +963,18 @@ def create_handler(game_state):
 
 
 def main():
-    import socket
-    
     game_state = GameState()
     
-    # Try different ports if 8000 is not available
-    ports_to_try = [8000, 8001, 8002, 8080, 3000]
-    server = None
+    # Create server
+    handler = create_handler(game_state)
+    server = HTTPServer(('localhost', 8000), handler)
     
-    for port in ports_to_try:
-        try:
-            # Create server
-            handler = create_handler(game_state)
-            # Use 0.0.0.0 to allow external connections (useful for Streamlit)
-            server = HTTPServer(('0.0.0.0', port), handler)
-            print(f"Starting web-based Polytopia Game Visualizer on port {port}...")
-            print("Server is running and ready to accept connections")
-            print("Press Ctrl+C to stop the server")
-            break
-        except OSError as e:
-            if "Address already in use" in str(e) or "Permission denied" in str(e):
-                print(f"Port {port} is not available, trying next port...")
-                continue
-            else:
-                raise e
+    print("Starting web-based Polytopia Game Visualizer...")
+    print("Open your browser and go to: http://localhost:8000")
+    print("Press Ctrl+C to stop the server")
     
-    if server is None:
-        print("Error: Could not find an available port. Please check your environment.")
-        return
+    # Open browser automatically
+    webbrowser.open('http://localhost:8000')
     
     try:
         server.serve_forever()

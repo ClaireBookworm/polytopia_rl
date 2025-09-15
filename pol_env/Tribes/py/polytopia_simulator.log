@@ -1,0 +1,42 @@
+2025-09-14 09:37:24,066 - polytopia_simulator - INFO - 🎮 Starting Polytopia Simulator...
+2025-09-14 09:37:24,067 - polytopia_simulator - INFO - 🌐 Server running on: http://0.0.0.0:8000
+2025-09-14 09:37:24,067 - polytopia_simulator - INFO - 📱 Access from any device on your network!
+2025-09-14 09:37:24,067 - polytopia_simulator - INFO - ⏹️  Press Ctrl+C to stop the server
+2025-09-14 09:37:24,337 - polytopia_simulator - INFO - 127.0.0.1 - "GET / HTTP/1.1" 200 -
+2025-09-14 09:37:24,370 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860644364 HTTP/1.1" 404 -
+2025-09-14 09:37:24,372 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:34,246 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/start_game HTTP/1.1" 200 -
+2025-09-14 09:37:34,259 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860654248 HTTP/1.1" 404 -
+2025-09-14 09:37:34,265 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:34,840 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/next_step HTTP/1.1" 200 -
+2025-09-14 09:37:34,853 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860654842 HTTP/1.1" 200 -
+2025-09-14 09:37:34,859 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:34,954 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/next_step HTTP/1.1" 200 -
+2025-09-14 09:37:34,964 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860654955 HTTP/1.1" 200 -
+2025-09-14 09:37:34,968 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:35,176 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/next_step HTTP/1.1" 200 -
+2025-09-14 09:37:35,187 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860655177 HTTP/1.1" 200 -
+2025-09-14 09:37:35,193 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:35,330 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/next_step HTTP/1.1" 200 -
+2025-09-14 09:37:35,339 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860655332 HTTP/1.1" 200 -
+2025-09-14 09:37:35,342 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:35,506 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/next_step HTTP/1.1" 200 -
+2025-09-14 09:37:35,514 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860655507 HTTP/1.1" 200 -
+2025-09-14 09:37:35,518 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:35,676 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/next_step HTTP/1.1" 200 -
+2025-09-14 09:37:35,683 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860655678 HTTP/1.1" 200 -
+2025-09-14 09:37:35,689 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:35,823 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/next_step HTTP/1.1" 200 -
+2025-09-14 09:37:35,835 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860655825 HTTP/1.1" 200 -
+2025-09-14 09:37:35,842 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:36,162 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/next_step HTTP/1.1" 200 -
+2025-09-14 09:37:36,168 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860656163 HTTP/1.1" 200 -
+2025-09-14 09:37:36,173 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:36,416 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/next_step HTTP/1.1" 200 -
+2025-09-14 09:37:36,431 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860656418 HTTP/1.1" 200 -
+2025-09-14 09:37:36,436 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:36,586 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/next_step HTTP/1.1" 200 -
+2025-09-14 09:37:36,596 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/image?1757860656588 HTTP/1.1" 200 -
+2025-09-14 09:37:36,600 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/status HTTP/1.1" 200 -
+2025-09-14 09:37:37,014 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/stop HTTP/1.1" 200 -
+2025-09-14 09:37:38,042 - polytopia_simulator - INFO - 127.0.0.1 - "GET /api/download_video HTTP/1.1" 200 -

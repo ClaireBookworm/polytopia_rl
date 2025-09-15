@@ -1,0 +1,20 @@
+{
+  "name": "Polytopia Gym",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "11"
+    }
+  },
+  "postCreateCommand": "set -e; python -m pip install -U pip wheel; python -m pip install -r pol_env/Tribes/py/requirements.txt; cd pol_env/Tribes && mkdir -p out && find src -name '*.java' -exec javac -cp 'lib/json.jar' -d out -sourcepath src {} +",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "ms-toolsai.jupyter"]
+    }
+  },
+  "forwardPorts": [8501],
+  "portsAttributes": {
+    "8501": { "label": "Streamlit" }
+  },
+  "remoteUser": "vscode"
+}
